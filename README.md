@@ -1,6 +1,10 @@
 # MIT6.824
 
-课程链接: https://pdos.csail.mit.edu/6.824/
+> 课程链接: https://pdos.csail.mit.edu/6.824/
+>
+> 仅供参考，严禁抄袭
+
+
 
 ## Lab 1: MapReduce
 
