@@ -28,7 +28,7 @@ type ExampleReply struct {
 type TaskType int
 
 const (
-	FinishedTask TaskType = iota
+	FinishedTask TaskType = iota + 1
 	MapTask
 	ReduceTask
 )
