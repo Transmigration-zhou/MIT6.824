@@ -10,6 +10,9 @@
 
 https://github.com/Transmigration-zhou/MIT6.824/tree/lab_1
 
+![image](https://github.com/Transmigration-zhou/MIT6.824/assets/57855015/628db29b-ddff-48b1-9931-c80310c76d08)
+
+
 ```bash
 cd src/main
 go build -buildmode=plugin ../mrapps/wc.go
