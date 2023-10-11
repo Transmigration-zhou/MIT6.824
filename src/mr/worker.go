@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"hash/fnv"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/rpc"
 	"os"
@@ -38,20 +37,16 @@ func (a ByKey) Less(i, j int) bool { return a[i].Key < a[j].Key }
 
 // GetTask 获取任务
 func GetTask() Task {
-	args := TaskArgs{}
 	reply := Task{}
-
-	ok := call("Coordinator.AssignTask", &args, &reply)
-	if ok {
-		fmt.Println(reply)
-	} else {
-		fmt.Printf("call failed!\n")
+	ok := call("Coordinator.AssignTask", &TaskArgs{}, &reply)
+	if !ok {
+		log.Fatalf("GetTask failed!")
 	}
 	return reply
 }
 
-// Call RPC to mark the task as completed
-func CallDone(task *Task) Task {
+// CallDone 任务完成回调
+func CallDone(task *Task) {
 	args := TaskArgs{}
 	args.TaskType = task.TaskType
 	switch task.TaskType {
@@ -60,14 +55,10 @@ func CallDone(task *Task) Task {
 	case ReduceTask:
 		args.ReduceId = task.ReduceId
 	}
-	reply := Task{}
-	ok := call("Coordinator.FinishTask", &args, &reply)
-	if ok {
-		fmt.Println(reply)
-	} else {
-		fmt.Printf("call failed!\n")
+	ok := call("Coordinator.FinishTask", &args, &Task{})
+	if !ok {
+		log.Fatalf("CallDone failed!")
 	}
-	return reply
 }
 
 func handleMap(mapf func(string, string) []KeyValue, response *Task) {
@@ -76,13 +67,13 @@ func handleMap(mapf func(string, string) []KeyValue, response *Task) {
 	if err != nil {
 		log.Fatalf("cannot open %v", filename)
 	}
-	content, err := ioutil.ReadAll(file)
+	content, err := io.ReadAll(file)
 	if err != nil {
 		log.Fatalf("cannot read %v", filename)
 	}
 	file.Close()
 
-	IntermediateFiles := [](*os.File){}
+	var IntermediateFiles []*os.File
 	for i := 0; i < response.NReduce; i++ {
 		IntermediateFilename := fmt.Sprintf("mr-%d-%d", response.MapId, i)
 		IntermediateFile, err := os.Create(IntermediateFilename)
@@ -100,8 +91,8 @@ func handleMap(mapf func(string, string) []KeyValue, response *Task) {
 	}
 }
 
-func handleReduce(reducef func(string, []string) string, response *Task) {
-	intermediate := []KeyValue{}
+func handleReduce(reduceFunc func(string, []string) string, response *Task) {
+	var intermediate []KeyValue
 	for i := 0; i < response.NMap; i++ {
 		filename := fmt.Sprintf("mr-%d-%d", i, response.ReduceId)
 		file, err := os.Open(filename)
@@ -122,8 +113,9 @@ func handleReduce(reducef func(string, []string) string, response *Task) {
 
 	sort.Sort(ByKey(intermediate))
 
-	oname := fmt.Sprintf("mr-out-%d", response.ReduceId)
-	ofile, _ := os.Create(oname)
+	oName := fmt.Sprintf("mr-out-%d", response.ReduceId)
+	oFile, _ := os.Create(oName)
+	defer oFile.Close()
 
 	i := 0
 	for i < len(intermediate) {
@@ -131,23 +123,19 @@ func handleReduce(reducef func(string, []string) string, response *Task) {
 		for j < len(intermediate) && intermediate[j].Key == intermediate[i].Key {
 			j++
 		}
-		values := []string{}
+		var values []string
 		for k := i; k < j; k++ {
 			values = append(values, intermediate[k].Value)
 		}
-		output := reducef(intermediate[i].Key, values)
-
-		fmt.Fprintf(ofile, "%v %v\n", intermediate[i].Key, output)
-
+		output := reduceFunc(intermediate[i].Key, values)
+		fmt.Fprintf(oFile, "%v %v\n", intermediate[i].Key, output)
 		i = j
 	}
-
-	ofile.Close()
 }
 
 // main/mrworker.go calls this function.
-func Worker(mapf func(string, string) []KeyValue,
-	reducef func(string, []string) string) {
+func Worker(mapFunc func(string, string) []KeyValue,
+	reduceFunc func(string, []string) string) {
 	for {
 		task := GetTask()
 		if !task.IsAvailable && task.TaskType != FinishedTask {
@@ -156,10 +144,10 @@ func Worker(mapf func(string, string) []KeyValue,
 		}
 		switch task.TaskType {
 		case MapTask:
-			handleMap(mapf, &task)
+			handleMap(mapFunc, &task)
 			CallDone(&task)
 		case ReduceTask:
-			handleReduce(reducef, &task)
+			handleReduce(reduceFunc, &task)
 			CallDone(&task)
 		case FinishedTask:
 			return

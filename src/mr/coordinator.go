@@ -97,8 +97,8 @@ func (c *Coordinator) assignReduceTask() int {
 	return -1
 }
 
-// Your code here -- RPC handlers for the worker to call.
-func (c *Coordinator) AssignTask(args *TaskArgs, reply *Task) error {
+// AssignTask 分配任务
+func (c *Coordinator) AssignTask(_ *TaskArgs, reply *Task) error {
 	c.mux.Lock()
 	defer c.mux.Unlock()
 
@@ -118,7 +118,8 @@ func (c *Coordinator) AssignTask(args *TaskArgs, reply *Task) error {
 	return nil
 }
 
-func (c *Coordinator) FinishTask(args *TaskArgs, reply *Task) error {
+// FinishTask 任务完成回调
+func (c *Coordinator) FinishTask(args *TaskArgs, _ *Task) error {
 	c.mux.Lock()
 	defer c.mux.Unlock()
 
@@ -156,14 +157,6 @@ func (c *Coordinator) FinishTask(args *TaskArgs, reply *Task) error {
 	return err
 }
 
-// an example RPC handler.
-//
-// the RPC argument and reply types are defined in rpc.go.
-func (c *Coordinator) Example(args *ExampleArgs, reply *ExampleReply) error {
-	reply.Y = args.X + 1
-	return nil
-}
-
 // start a thread that listens for RPCs from worker.go
 func (c *Coordinator) server() {
 	rpc.Register(c)
@@ -178,8 +171,7 @@ func (c *Coordinator) server() {
 	go http.Serve(l, nil)
 }
 
-// main/mrcoordinator.go calls Done() periodically to find out
-// if the entire job has finished.
+// Done 判断任务是否完成
 func (c *Coordinator) Done() bool {
 	c.mux.Lock()
 	defer c.mux.Unlock()
@@ -187,9 +179,7 @@ func (c *Coordinator) Done() bool {
 	return c.status == Idle
 }
 
-// create a Coordinator.
-// main/mrcoordinator.go calls this function.
-// nReduce is the number of reduce tasks to use.
+// MakeCoordinator 创建协调器
 func MakeCoordinator(files []string, nReduce int) *Coordinator {
 	c := Coordinator{}
 
