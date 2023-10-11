@@ -14,17 +14,17 @@ import (
 type CoordinatorStatus int
 
 const (
-	Idle CoordinatorStatus = iota
-	Mapping
-	Reducing
+	Idle     CoordinatorStatus = iota + 1 // 空闲
+	Mapping                               // 处于 Map 阶段
+	Reducing                              // 处于 Reduce 阶段
 )
 
 type TaskStatus int
 
 const (
-	Unassigned TaskStatus = iota
-	Excuting
-	Finished
+	Unassigned TaskStatus = iota + 1 // 未分配
+	Excuting                         // 执行中
+	Finished                         // 已完成
 )
 
 type mapTask struct {
