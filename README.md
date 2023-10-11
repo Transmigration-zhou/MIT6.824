@@ -3,6 +3,9 @@
 课程链接: https://pdos.csail.mit.edu/6.824/
 
 ## Lab 1: MapReduce
+
+https://github.com/Transmigration-zhou/MIT6.824/tree/lab_1
+
 ```bash
 cd src/main
 go build -buildmode=plugin ../mrapps/wc.go
