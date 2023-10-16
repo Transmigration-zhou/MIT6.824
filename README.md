@@ -24,3 +24,27 @@ more mr-out-0
 ```bash
 bash test-mr.sh
 ```
+
+## Lab 2: Raft
+
+Raft的可视化网站：https://thesecretlivesofdata.com/raft/
+
+![image](https://github.com/Transmigration-zhou/MIT6.824/assets/57855015/5325d4ee-7cda-41e9-9dd7-422fb150fa5b)
+
+![image](https://github.com/Transmigration-zhou/MIT6.824/assets/57855015/e031d099-dd7e-46e0-8421-4e0823fcde34)
+
+
+### Part 2A: leader election
+
+https://github.com/Transmigration-zhou/MIT6.824/tree/lab_2a
+
+验证结果:
+```bash
+验证结果:
+```bash
+cd src/raft
+# 单个测试
+go test -run 2A -race
+# 批量测试（测试次数、同一时刻测试的数量、lab名称）
+./go-test-many.sh 1000 4 2A 
+```
