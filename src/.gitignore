@@ -11,3 +11,6 @@ mrtmp.*
 /main/mrsequential
 /main/mrworker
 /main/mr-out-0
+/raft/tester
+/raft/*.err
+/raft/*.log
