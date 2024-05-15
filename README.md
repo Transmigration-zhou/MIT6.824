@@ -40,8 +40,6 @@ https://github.com/Transmigration-zhou/MIT6.824/tree/lab_2a
 
 验证结果:
 ```bash
-验证结果:
-```bash
 cd src/raft
 # 单个测试
 go test -run 2A -race
