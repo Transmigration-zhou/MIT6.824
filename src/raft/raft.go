@@ -188,7 +188,6 @@ type AppendEntriesReply struct {
 	Success bool
 }
 
-// 添加日志
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
