@@ -46,3 +46,14 @@ go test -run 2A -race
 # 批量测试（测试次数、同一时刻测试的数量、lab名称）
 ./go-test-many.sh 1000 4 2A 
 ```
+
+### Part 2B: log
+```bash
+cd src/raft
+# 单个测试
+go test -run 2B -race
+# 批量测试（测试次数、同一时刻测试的数量、lab名称）
+./go-test-many.sh 1000 4 2B
+
+for i in {1..1000}; go test -run 2B 
+```
