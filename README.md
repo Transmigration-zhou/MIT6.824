@@ -48,6 +48,9 @@ go test -run 2A -race
 ```
 
 ### Part 2B: log
+
+https://github.com/Transmigration-zhou/MIT6.824/tree/lab_2b
+
 ```bash
 cd src/raft
 # 单个测试
