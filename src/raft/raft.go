@@ -424,6 +424,12 @@ func (rf *Raft) convertTo(s ServerState) {
 	case Candidate:
 		rf.startElection()
 	case Leader:
+		for i := range rf.nextIndex {
+			rf.nextIndex[i] = len(rf.logs)
+		}
+		for i := range rf.matchIndex {
+			rf.matchIndex[i] = 0
+		}
 		rf.electionTimer.Stop()
 		rf.broadcastHeartbeat()
 		rf.heartbeatTimer.Reset(rf.getHeartbeatTimeout())
