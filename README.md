@@ -1,6 +1,8 @@
 # MIT6.824
 
 > 课程链接: https://pdos.csail.mit.edu/6.824/
+> 
+> 论文链接: https://raft.github.io/raft.pdf
 >
 > 仅供参考，严禁抄袭
 
