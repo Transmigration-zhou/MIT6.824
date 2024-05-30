@@ -18,13 +18,13 @@ package raft
 //
 
 import (
+	"bytes"
 	"math/rand"
-	//	"bytes"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	//	"6.824/labgob"
+	"6.824/labgob"
 	"6.824/labrpc"
 )
 
@@ -129,6 +129,14 @@ func (rf *Raft) persist() {
 	// e.Encode(rf.yyy)
 	// data := w.Bytes()
 	// rf.persister.SaveRaftState(data)
+
+	w := new(bytes.Buffer)
+	e := labgob.NewEncoder(w)
+	e.Encode(rf.currentTerm)
+	e.Encode(rf.votedFor)
+	e.Encode(rf.logs)
+	data := w.Bytes()
+	rf.persister.SaveRaftState(data)
 }
 
 // restore previously persisted state.
@@ -149,6 +157,23 @@ func (rf *Raft) readPersist(data []byte) {
 	//   rf.xxx = xxx
 	//   rf.yyy = yyy
 	// }
+
+	r := bytes.NewBuffer(data)
+	d := labgob.NewDecoder(r)
+	var currentTerm, votedFor int
+	var logs []LogEntry
+	if d.Decode(&currentTerm) != nil ||
+		d.Decode(&votedFor) != nil ||
+		d.Decode(&logs) != nil {
+		DPrintf("%v read persist fail", rf)
+	} else {
+		rf.mu.Lock()
+		defer rf.mu.Unlock()
+
+		rf.currentTerm = currentTerm
+		rf.votedFor = votedFor
+		rf.logs = logs
+	}
 }
 
 // A service wants to switch to snapshot.  Only do so if Raft hasn't
@@ -193,6 +218,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	// Your code here (2A, 2B).
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
+	defer rf.persist()
 
 	if args.Term < rf.currentTerm ||
 		(args.Term == rf.currentTerm && rf.votedFor != -1 && rf.votedFor != args.CandidateId) {
@@ -231,14 +257,17 @@ type AppendEntriesArgs struct {
 }
 
 type AppendEntriesReply struct {
-	Term                   int
-	Success                bool
-	FollowerCommittedIndex int
+	Term    int
+	Success bool
+
+	ConflictTerm  int
+	ConflictIndex int
 }
 
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
+	defer rf.persist()
 
 	if args.Term < rf.currentTerm {
 		reply.Success = false
@@ -252,9 +281,22 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	}
 	rf.electionTimer.Reset(rf.getElectionTimeout())
 
-	if len(rf.logs)-1 < args.PrevLogIndex || rf.logs[args.PrevLogIndex].Term != args.PrevLogTerm {
+	if len(rf.logs)-1 < args.PrevLogIndex {
 		reply.Success = false
 		reply.Term = rf.currentTerm
+		reply.ConflictIndex = len(rf.logs)
+		reply.ConflictTerm = -1
+		return
+	}
+	if rf.logs[args.PrevLogIndex].Term != args.PrevLogTerm {
+		reply.Success = false
+		reply.Term = rf.currentTerm
+		reply.ConflictTerm = rf.logs[args.PrevLogIndex].Term
+		conflictIndex := args.PrevLogIndex
+		for rf.logs[conflictIndex-1].Term == reply.ConflictTerm {
+			conflictIndex--
+		}
+		reply.ConflictIndex = conflictIndex
 		return
 	}
 
@@ -341,6 +383,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	if isLeader {
 		rf.mu.Lock()
 		defer rf.mu.Unlock()
+		defer rf.persist()
 
 		index = len(rf.logs)
 		rf.logs = append(rf.logs, LogEntry{Term: term, Command: command})
@@ -499,8 +542,18 @@ func (rf *Raft) broadcastHeartbeat() {
 					if reply.Term > rf.currentTerm {
 						rf.currentTerm = reply.Term
 						rf.convertTo(Follower)
+						rf.persist()
 					} else {
-						rf.nextIndex[server]--
+						rf.nextIndex[server] = reply.ConflictIndex
+
+						if reply.ConflictTerm != -1 {
+							for i := args.PrevLogIndex; i >= 1; i-- {
+								if rf.logs[i-1].Term == reply.ConflictTerm {
+									rf.nextIndex[server] = i
+									break
+								}
+							}
+						}
 					}
 				}
 				rf.mu.Unlock()
@@ -512,6 +565,8 @@ func (rf *Raft) broadcastHeartbeat() {
 }
 
 func (rf *Raft) startElection() {
+	defer rf.persist()
+
 	rf.currentTerm++
 	rf.electionTimer.Reset(rf.getElectionTimeout())
 
@@ -543,6 +598,7 @@ func (rf *Raft) startElection() {
 					if rf.currentTerm < reply.Term {
 						rf.currentTerm = reply.Term
 						rf.convertTo(Follower)
+						rf.persist()
 					}
 				}
 				rf.mu.Unlock()
