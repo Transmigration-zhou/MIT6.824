@@ -445,7 +445,7 @@ func (rf *Raft) ticker() {
 }
 
 func (rf *Raft) getHeartbeatTimeout() time.Duration {
-	return 150 * time.Millisecond
+	return 100 * time.Millisecond
 }
 
 func (rf *Raft) getElectionTimeout() time.Duration {
