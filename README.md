@@ -51,9 +51,6 @@ go test -run 2A -race
 
 ### Part 2B: log
 
-![image](https://github.com/Transmigration-zhou/MIT6.824/assets/57855015/b756d545-605b-4fb6-aa63-f37eeda4da52)
-
-
 https://github.com/Transmigration-zhou/MIT6.824/tree/lab_2b
 
 验证结果:
@@ -68,6 +65,8 @@ for i in {1..1000}; go test -run 2B
 ```
 
 ### Part 2C: persistence
+
+![image](https://github.com/Transmigration-zhou/MIT6.824/assets/57855015/b756d545-605b-4fb6-aa63-f37eeda4da52)
 
 https://github.com/Transmigration-zhou/MIT6.824/tree/lab_2c
 
